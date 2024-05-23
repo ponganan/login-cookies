@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, of, catchError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +13,7 @@ export class AuthService {
   private readonly JWT_TOKEN = 'JWT_TOKEN';
   private loggedUser: string;
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private readonly verifyAuthUrl = 'http://localhost:3000/api/verify-auth';
   //public $refreshToken = new Subject<boolean>;
 
   signalToken: any;
@@ -57,8 +58,15 @@ export class AuthService {
   }
 
 
-  isLoggedIn() {
-    return false;
+  isLoggedIn(): Observable<boolean> {
+    return this.http.get<boolean>(this.verifyAuthUrl, { withCredentials: true })
+      .pipe(
+        catchError(err => {
+          console.error('Error verifying authentication:', err);
+          // Handle error appropriately (e.g., redirect to login)
+          return of(false); // Return false to indicate not authenticated
+        })
+      );
   }
 
   refreshToken() {
